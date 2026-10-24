@@ -82,7 +82,7 @@ Los servicios usan Config Server si está disponible; si no, arrancan con su con
 | Autenticación | `POST /auth/login`, `GET/POST/PUT/DELETE /users` |
 | Inventario | `GET/POST /products`, `GET/PUT/DELETE /products/{id}` |
 | Clientes | `GET/POST /customers`, `GET/PUT/DELETE /customers/{id}` |
-| Ventas | `GET/POST /sales`, `GET/PUT/DELETE /sales/{id}`, `POST /sales/batch`, `POST /sales/rabbit-reserve`, `GET /sales/{id}/details` |
+| Ventas | `GET/POST /sales`, `GET/PUT/DELETE /sales/{id}`, `POST /sales/batch`, `POST /sales/rabbit-reserve`, `GET /sales/{id}/details`, `GET /sales/{id}/details-resiliente` |
 | Reportes | `GET /reports/resumen`, `GET /reports/inventario`, `GET /reports/ventas` |
 | Salud | `GET /actuator/health` |
 
@@ -132,3 +132,7 @@ database/     Scripts y compose de MySQL
 postman/      Colección de pruebas
 k8s/          Manifiestos de Kubernetes
 ```
+
+## Colaboradores
+
+- [SuperVictorDavid](https://github.com/SuperVictorDavid)
