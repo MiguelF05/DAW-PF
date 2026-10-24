@@ -1,0 +1,127 @@
+<div class="content-container ventas-page">
+  <div class="ventas-header">
+    <div>
+      <h2>🧾 Historial de Ventas</h2>
+      <p>Boletas emitidas y registradas en el sistema</p>
+    </div>
+    <a routerLink="/carrito" class="btn-nueva-venta">＋ Nueva Venta</a>
+  </div>
+
+  <div class="stats-grid ventas-stats">
+    <div class="stat-card">
+      <div class="stat-icon icon-blue">📅</div>
+      <div class="stat-info"><h4>Ventas Hoy</h4><span class="stat-value">{{ ventasHoy }}</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon icon-green">🧾</div>
+      <div class="stat-info"><h4>Total Ventas Filtradas</h4><span class="stat-value">{{ totalFiltradas }}</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon icon-orange">💰</div>
+      <div class="stat-info"><h4>Monto Total S/</h4><span class="stat-value">S/ {{ montoTotal | number:'1.2-2' }}</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon icon-purple">📊</div>
+      <div class="stat-info"><h4>Promedio por Venta</h4><span class="stat-value">S/ {{ promedio | number:'1.2-2' }}</span></div>
+    </div>
+  </div>
+
+  <div class="filter-card">
+    <div class="filter-grid">
+      <div class="filter-field">
+        <label>Fecha Desde</label>
+        <input type="date" class="search-input" [(ngModel)]="fechaDesde" />
+      </div>
+      <div class="filter-field">
+        <label>Fecha Hasta</label>
+        <input type="date" class="search-input" [(ngModel)]="fechaHasta" />
+      </div>
+      <div class="filter-field">
+        <label>Cliente</label>
+        <select class="filter-select" [(ngModel)]="filtroCliente">
+          <option value="Todos">Todos</option>
+          <option *ngFor="let cid of clienteIds" [value]="cid">{{ nombreCliente(cid) }}</option>
+        </select>
+      </div>
+      <div class="filter-field filter-btn-group">
+        <button class="btn-primary" (click)="filtrar()">Filtrar</button>
+        <button class="btn-secondary" (click)="limpiar()">Limpiar</button>
+      </div>
+    </div>
+    <p class="filter-count">{{ filtradas.length }} boletas encontradas</p>
+  </div>
+
+  <div class="table-container">
+    <table class="data-table ventas-table">
+      <thead>
+        <tr>
+          <th>N° Boleta</th><th>Joya</th><th>Fecha y Hora</th><th>Cliente</th><th>Vendedor</th><th>Total</th><th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let g of paginadas">
+          <td><span class="pill pill-boleta">{{ g.numeroBoleta }}</span></td>
+          <td class="cell-joya">
+            <div *ngFor="let it of g.items" class="venta-item-line">
+              {{ nombreJoya(it.productId) }}<span class="muted-cant"> x{{ it.quantity }}</span>
+            </div>
+          </td>
+          <td class="cell-fecha">{{ g.fechaVenta ? (g.fechaVenta | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+          <td>{{ nombreCliente(g.customerId) }}</td>
+          <td><span class="pill pill-vendedor">{{ g.vendedor || '—' }}</span></td>
+          <td class="cell-total">S/ {{ (g.total ?? 0) | number:'1.2-2' }}</td>
+          <td>
+            <div class="actions">
+              <button class="btn-link-detalle" (click)="verDetalle(g)">👁 Ver Detalle</button>
+              <button *ngIf="auth.isAdmin()" class="btn-icon danger" title="Eliminar" [disabled]="eliminando" (click)="eliminar(g)">🗑</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filtradas.length === 0">
+          <td colspan="7" class="empty-row">No se encontraron ventas</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination" *ngIf="totalPaginas > 1">
+    <button class="page-btn" (click)="anterior()" [disabled]="pagina === 1">‹ Anterior</button>
+    <button *ngFor="let p of paginas" class="page-btn" [class.active]="p === pagina" (click)="irA(p)">{{ p }}</button>
+    <button class="page-btn" (click)="siguiente()" [disabled]="pagina === totalPaginas">Siguiente ›</button>
+  </div>
+
+  <div *ngIf="detalle" class="modal-overlay">
+    <div class="modal-content modal-lg printable-voucher ventas-modal">
+      <div class="ventas-modal-header no-print">
+        <h3>🧾 Boleta {{ detalle.numeroBoleta }}</h3>
+        <button class="modal-close" (click)="cerrarDetalle()">✕</button>
+      </div>
+      <div class="ventas-modal-body">
+        <h3 class="print-only-title">🧾 Boleta {{ detalle.numeroBoleta }} — Joyería Morgan</h3>
+        <p><strong>Fecha y Hora:</strong> {{ detalle.fechaVenta ? (detalle.fechaVenta | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+        <p><strong>Cliente:</strong> {{ nombreCliente(detalle.customerId) }}</p>
+        <p><strong>Vendedor:</strong> {{ detalle.vendedor || '—' }}</p>
+        <div class="table-container" style="margin: 12px 0">
+          <table class="data-table">
+            <thead>
+              <tr><th>Producto</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let it of detalle.items">
+                <td>{{ nombreJoya(it.productId) }}</td>
+                <td>{{ it.quantity }}</td>
+                <td>S/ {{ ((it.total ?? 0) / (it.quantity || 1)) | number:'1.2-2' }}</td>
+                <td>S/ {{ (it.total ?? 0) | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p><strong>Total: S/ {{ (detalle.total ?? 0) | number:'1.2-2' }}</strong> | Estado: {{ detalle.items[0]?.status || 'PROCESADO' }}</p>
+      </div>
+      <div class="modal-buttons no-print">
+        <button class="btn-cancel" (click)="cerrarDetalle()">Cerrar</button>
+        <button class="btn-primary" (click)="imprimir()">🖨 Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
