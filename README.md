@@ -1,151 +1,96 @@
 # Joyería Morgan
 
-Aplicación web para la gestión de inventario, clientes, ventas y reportes de una joyería. El backend está construido con microservicios Spring Boot y el frontend con Angular.
+Aplicación web para gestionar inventario, clientes, ventas y reportes de una joyería. Backend con microservicios Spring Boot y frontend Angular.
 
-## Arquitectura
+## Tecnologías
 
-| Componente | Puerto | Responsabilidad |
+Java 17, Spring Boot 3.2.5, Spring Cloud, Spring Security, JWT, MySQL 8, RabbitMQ, Kafka, Angular 22, Docker y Kubernetes.
+
+## Servicios
+
+| Componente | Puerto | Función |
 | --- | ---: | --- |
-| `auth-service` | 8083 | Login con JWT, usuarios y contraseñas BCrypt |
+| `auth-service` | 8083 | Login con JWT y usuarios |
 | `clientes-service` | 8084 | CRUD de clientes |
-| `inventario-service` | 8081 | CRUD de joyas, control de stock y consumo de eventos |
-| `ventas-service` | 8082 | Registro de ventas, Feign, Circuit Breaker y publicación de eventos |
-| `reportes-service` | 8085 | Resumen de inventario, ventas y clientes mediante Feign |
-| `eureka-server` | 8761 | Registro y descubrimiento de servicios |
-| `config-server` | 8888 | Configuración centralizada con repositorio nativo |
-| `api-gateway` | 8762 | Enrutamiento, CORS y punto de entrada al backend |
+| `inventario-service` | 8081 | CRUD de joyas y stock |
+| `ventas-service` | 8082 | Ventas, Feign, Circuit Breaker y eventos |
+| `reportes-service` | 8085 | Reportes con datos de los otros servicios |
+| `eureka-server` | 8761 | Registro de servicios |
+| `config-server` | 8888 | Configuración centralizada |
+| `api-gateway` | 8762 | Entrada al backend y CORS |
 | `joyeria-front` | 4200 | Interfaz Angular |
-| MySQL | 5510 | Base de datos `joyeria_db` |
-| RabbitMQ | 5672 / 15672 | Colas de reserva y alertas de stock |
-| Kafka | 9092 | Topic `stock-movements` |
-| Kafka UI | 8090 | Panel de inspección de Kafka |
-
-Tecnologías principales: Java 17, Spring Boot 3.2.5, Spring Cloud, Spring Security, JWT, Feign, Resilience4j, RabbitMQ, Kafka, MySQL 8, Angular 22, Docker y Kubernetes.
-
-## Estructura
-
-```text
-backend/
-  auth-service/
-  clientes-service/
-  inventario-service/
-  ventas-service/
-  reportes-service/
-infra/
-  eureka-server/
-  config-server/
-  api-gateway/
-frontend/
-  joyeria-front/
-database/
-  docker-compose.yml
-  script.sql
-postman/
-  Joyeria-Morgan-DEMO.postman_collection.json
-  README-coleccion.md
-k8s/
-docker-compose.full.yml
-```
+| MySQL / RabbitMQ / Kafka | 5510 / 5672 / 9092 | Datos y mensajería |
 
 ## Requisitos
 
-- Docker Desktop para la ejecución con contenedores.
-- JDK 17 si los servicios se ejecutan desde IntelliJ o desde Gradle.
-- Node.js y npm si el frontend se ejecuta con `ng serve`.
-- Opcional: kubectl y un clúster de Kubernetes para los manifiestos de `k8s/`.
+- Docker Desktop.
+- Opcional para desarrollo local: JDK 17, Node.js y npm.
 
-## Puesta en marcha
-
-### Opción A: stack completo con Docker
+## Inicio rápido
 
 ```powershell
 docker compose -f docker-compose.full.yml up -d --build
 ```
 
-Cuando los contenedores estén disponibles, abre:
+Abrir:
 
 - Frontend: http://localhost:4200
 - Eureka: http://localhost:8761
-- Config Server: http://localhost:8888/api-gateway/default
 - Kafka UI: http://localhost:8090
 - RabbitMQ: http://localhost:15672
 
-Credenciales de la aplicación:
+Credenciales:
 
-- Administrador: `admin` / `admin123`
-- Vendedor: `vendedor` / `vendedor123`
+- `admin` / `admin123`
+- `vendedor` / `vendedor123`
 - RabbitMQ: `guest` / `guest`
 
-### Opción B: infraestructura en Docker y servicios en IntelliJ
+## Ejecución local
 
-1. Levanta MySQL, RabbitMQ, Kafka y Kafka UI:
+1. Levantar MySQL, RabbitMQ, Kafka y Kafka UI:
 
-   ```powershell
-   docker compose -f docker-compose.full.yml up -d mysql rabbitmq kafka kafka-ui
-   ```
-
-2. Inicia los servicios en este orden:
-   `infra/eureka-server`, `infra/config-server`, los cinco servicios de `backend/` y `infra/api-gateway`.
-
-3. Ejecuta el frontend:
-
-   ```powershell
-   cd frontend/joyeria-front
-   npm install
-   npm start
-   ```
-
-El frontend de desarrollo usa `environment.development.ts` y llama directamente a los puertos `8081` a `8085`. El build de producción usa `environment.ts` con `apiUrl: '/api'`; nginx redirige `/api/*` al API Gateway.
-
-## Configuración
-
-La configuración centralizada está en `infra/config-server/config-repo/`. Los servicios la importan con:
-
-```text
-optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+```powershell
+docker compose -f docker-compose.full.yml up -d mysql rabbitmq kafka kafka-ui
 ```
 
-Si el Config Server no está disponible, cada servicio arranca con su `application.yml` local. En Docker, los hosts y credenciales se inyectan mediante variables de entorno definidas en `docker-compose.full.yml`.
+2. Iniciar en orden `eureka-server`, `config-server`, los servicios de `backend/` y `api-gateway`.
 
-## Base de datos
+3. Iniciar el frontend:
 
-La base se llama `joyeria_db` y se expone en el puerto `5510`. JPA crea y actualiza las tablas al iniciar los servicios:
+```powershell
+cd frontend/joyeria-front
+npm install
+npm start
+```
 
-- `joyas`
-- `ventas`
-- `app_users`
-- `customers`
+Los servicios usan Config Server si está disponible; si no, arrancan con su configuración local. En desarrollo el frontend llama a los puertos `8081` a `8085`; en Docker usa nginx y `/api`.
 
-Los datos iniciales se cargan desde las clases `*DataInitializer` cuando las tablas están vacías. `database/script.sql` contiene inserts de referencia comentados.
+## Funcionamiento
 
-## Flujos principales
-
-- **Feign:** `ventas-service` consulta `inventario-service` para validar productos y calcular totales. Los endpoints `GET /sales/{id}/details` y `GET /sales/{id}/details-resiliente` exponen el detalle.
-- **Kafka:** `POST /sales` publica un evento en `stock-movements`; `inventario-service` descuenta el stock. La venta solo se confirma cuando Kafka acepta el evento.
-- **RabbitMQ:** `POST /sales/rabbit-reserve` usa `stock-reserve-queue`; las alertas de stock bajo se publican en `stock-low-queue`.
-- **Compensación:** al eliminar una venta se publica `sale-cancellation-requests` y `inventario-service` devuelve el stock de cada producto.
-- **Checkout del carrito:** `POST /sales/batch` recibe varios productos, valida todo el stock antes de guardar y crea una fila por producto con el mismo `numeroBoleta`.
-- **Seguridad:** JWT en los cinco servicios, BCrypt para contraseñas, `401` sin token y `403` cuando el rol no tiene permiso.
-- **Reportes:** `reportes-service` agrega datos de inventario, ventas y clientes. Si una dependencia no responde, devuelve `503` en lugar de ceros.
+- `ventas-service` consulta `inventario-service` con Feign para validar productos y calcular totales.
+- `POST /sales` publica en Kafka y descuenta stock; si Kafka falla, la venta no se confirma.
+- `POST /sales/rabbit-reserve` reserva stock por RabbitMQ.
+- Al eliminar una venta se devuelve el stock mediante un evento de compensación.
+- `POST /sales/batch` registra un carrito completo con una sola boleta.
+- Los servicios validan JWT: `401` sin token y `403` por rol insuficiente.
+- Los reportes devuelven `503` si una dependencia no responde.
 
 ## API principal
 
-| Servicio | Endpoints |
+| Recurso | Endpoints |
 | --- | --- |
 | Autenticación | `POST /auth/login`, `GET/POST/PUT/DELETE /users` |
 | Inventario | `GET/POST /products`, `GET/PUT/DELETE /products/{id}` |
 | Clientes | `GET/POST /customers`, `GET/PUT/DELETE /customers/{id}` |
-| Ventas | `GET/POST /sales`, `GET/PUT/DELETE /sales/{id}`, `POST /sales/batch`, `POST /sales/rabbit-reserve`, `GET /sales/{id}/details`, `GET /sales/{id}/details-resiliente` |
+| Ventas | `GET/POST /sales`, `GET/PUT/DELETE /sales/{id}`, `POST /sales/batch`, `POST /sales/rabbit-reserve`, `GET /sales/{id}/details` |
 | Reportes | `GET /reports/resumen`, `GET /reports/inventario`, `GET /reports/ventas` |
 | Salud | `GET /actuator/health` |
 
+## Base de datos
+
+MySQL expone `joyeria_db` en el puerto `5510`. JPA crea y actualiza las tablas `joyas`, `ventas`, `app_users` y `customers`. Los datos iniciales se cargan con las clases `*DataInitializer`.
+
 ## Pruebas
-
-Backend, dentro de cada servicio:
-
-```powershell
-.\gradlew.bat test
-```
 
 Frontend:
 
@@ -155,9 +100,13 @@ npm test
 npm run build
 ```
 
-La suite del frontend tiene 7 pruebas.
+Backend, dentro de cada servicio:
 
-La colección de Postman contiene 39 peticiones en 9 carpetas y no requiere un environment: las variables están definidas dentro de la colección. El detalle está en `postman/README-coleccion.md`.
+```powershell
+.\gradlew.bat test
+```
+
+La suite del frontend tiene 7 pruebas. La colección de Postman tiene 39 peticiones en 9 carpetas y no requiere un environment:
 
 ```powershell
 npx --yes newman run "postman/Joyeria-Morgan-DEMO.postman_collection.json" --reporters cli
@@ -165,14 +114,21 @@ npx --yes newman run "postman/Joyeria-Morgan-DEMO.postman_collection.json" --rep
 
 ## Docker y Kubernetes
 
-Los Dockerfiles usan compilación multi-stage, por lo que no necesitan `build/` ni `target/` en la máquina. El stack completo se levanta con:
-
-```powershell
-docker compose -f docker-compose.full.yml up -d --build
-```
-
-Los manifiestos de `k8s/` despliegan MySQL, Eureka, Config Server, los cinco servicios, el gateway y sus Services. Los NodePort son `30081` a `30085`, `30061`, `30062`, `30088` y `30306`.
+El stack completo se levanta con `docker-compose.full.yml`. Los manifiestos de `k8s/` despliegan MySQL, Eureka, Config Server, los servicios y el gateway.
 
 ```powershell
 kubectl apply -f k8s/
+```
+
+NodePorts: `30081` a `30085`, `30061`, `30062`, `30088` y `30306`.
+
+## Estructura
+
+```text
+backend/      Servicios Spring Boot
+infra/        Eureka, Config Server y API Gateway
+frontend/     Aplicación Angular
+database/     Scripts y compose de MySQL
+postman/      Colección de pruebas
+k8s/          Manifiestos de Kubernetes
 ```
